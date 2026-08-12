@@ -70,7 +70,8 @@ def main():
     OUT.write_text(json.dumps({'updated_utc':stamp,'universe_size':len(syms),'candidates_scanned':len(rows),'buy_candidates':sum(x['status']=='BUY CANDIDATE' for x in rows),'stocks':top},indent=2),encoding='utf-8')
     if top:
         text=INDEX.read_text(encoding='utf-8'); arr=',\n'.join(' '+json.dumps(x,separators=(',',':')) for x in top)
-        text=re.sub(r'const stocks=\[.*?\];','const stocks=[\n'+arr+'\n];',text,flags=re.S); text=text.replace('ENGINE V2.1 • RISK FILTERED','ENGINE V2.2 • FAST LIVE SCAN'); INDEX.write_text(text,encoding='utf-8')
+        text=re.sub(r'const stocks=\[.*?\];', lambda m: 'const stocks=[\n'+arr+'\n];', text, flags=re.S)
+        text=text.replace('ENGINE V2.1 • RISK FILTERED','ENGINE V2.2 • FAST LIVE SCAN'); INDEX.write_text(text,encoding='utf-8')
     print('DONE | Top:',len(top),'| Scanned:',len(rows),'| BUY:',sum(x['status']=='BUY CANDIDATE' for x in rows),flush=True)
 
 if __name__=='__main__': main()
