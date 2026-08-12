@@ -8,145 +8,69 @@ ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / 'index.html'
 OUT = ROOT / 'market_data.json'
 
-FALLBACK = ['RELIANCE','HDFCBANK','ICICIBANK','SBIN','AXISBANK','KOTAKBANK','ITC','TCS','INFY','HCLTECH','BHARTIARTL','LT','TATAMOTORS','TATASTEEL','M&M','SUNPHARMA','MARUTI','NTPC','POWERGRID','ONGC','COALINDIA','ADANIENT','ADANIPORTS','BEL','HAL','TRENT','ZOMATO','JIOFIN','INDHOTEL','IOC','BPCL','HINDALCO','JSWSTEEL','VEDL','TITAN','BAJFINANCE','BAJAJFINSV','INDUSINDBK','EICHERMOT','HEROMOTOCO','TVSMOTOR','DLF','PIDILITIND','SIEMENS','ABB','DIXON','BHEL','IRFC','RVNL','IREDA']
+# Fast liquid universe for the first live version. Expand after stability is proven.
+UNIVERSE = '''RELIANCE HDFCBANK ICICIBANK SBIN AXISBANK KOTAKBANK INDUSINDBK BAJFINANCE BAJAJFINSV
+BHARTIARTL TCS INFY HCLTECH WIPRO LT LTIM TECHM ITC HINDUNILVR MARUTI M&M TATAMOTORS TATASTEEL
+JSWSTEEL HINDALCO VEDL COALINDIA NTPC POWERGRID ONGC BPCL IOC ADANIENT ADANIPORTS BEL HAL BHEL
+IRFC RVNL IREDA PFC RECLTD SAIL JINDALSTEL TVSMOTOR EICHERMOT HEROMOTOCO APOLLOTYRE ASHOKLEY
+TRENT TITAN DIXON ZOMATO JIOFIN INDHOTEL DLF OBEROIRLTY PIDILITIND SIEMENS ABB
+SUNPHARMA CIPLA DRREDDY DIVISLAB AUROPHARMA TORNTPHARM MAXHEALTH LTTS PERSISTENT COFORGE
+POLYCAB KEI FINCABLES KPIL APLAPOLLO VOLTAS CROMPTON KAYNES KALYANKJIL HAVELLS AMBER
+MCX BSE IEX IRCTC HUDCO NBCC SJVN NHPC BANKBARODA CANBK PNB IDFCFIRSTB FEDERALBNK RBLBANK BANDHANBNK
+ZEEL PVRINOX DELHIVERY
+'''.split()
 
-
-def universe():
-    urls = [
-        'https://www.niftyindices.com/IndexConstituent/ind_nifty500list.csv',
-        'https://archives.nseindia.com/content/indices/ind_nifty500list.csv',
-    ]
-    for url in urls:
-        try:
-            df = pd.read_csv(url)
-            col = next((c for c in df.columns if str(c).strip().upper() == 'SYMBOL'), None)
-            if col:
-                syms = [str(x).strip().upper() for x in df[col].dropna()]
-                if len(syms) >= 300:
-                    return sorted(set(syms))
-        except Exception as e:
-            print('Universe source failed:', e, flush=True)
-    return FALLBACK
-
-
-def scan_symbol(sym, data, bench5=0.0):
-    if data is None or len(data) < 35:
-        return None
-    d = data.dropna().copy()
-    if len(d) < 35:
-        return None
-    close = d['Close'].astype(float)
-    high = d['High'].astype(float)
-    low = d['Low'].astype(float)
-    vol = d['Volume'].astype(float)
-    p = float(close.iloc[-1])
-    prev20high = float(high.iloc[-21:-1].max())
-    avgvol20 = float(vol.iloc[-21:-1].mean())
-    vr = float(vol.iloc[-1] / avgvol20) if avgvol20 > 0 else 0.0
-    ret5 = float((p / close.iloc[-6] - 1) * 100)
-    ret20 = float((p / close.iloc[-21] - 1) * 100)
-    breakout_ratio = (p / prev20high - 1) * 100 if prev20high else 0.0
-    range20 = float(high.iloc[-21:-1].max() - low.iloc[-21:-1].min())
-    pos20 = ((p - float(low.iloc[-21:-1].min())) / range20 * 100) if range20 > 0 else 50
-    slope = float((close.iloc[-1] / close.iloc[-11] - 1) * 100)
-    structure = max(0, min(100, 50 + slope * 8 + (pos20 - 50) * 0.5))
-
-    recent_high = high.iloc[-6:-1]
-    recent_low = low.iloc[-6:-1]
-    broke_recent = bool((recent_high > prev20high).any())
-    retest_hold = bool(broke_recent and recent_low.min() <= prev20high * 1.015 and p >= prev20high * 0.995)
-    if retest_hold:
-        retest = 92.0
-    elif broke_recent:
-        distance = abs(p / prev20high - 1) * 100
-        retest = max(45, min(82, 82 - distance * 8))
-    else:
-        retest = max(30, min(75, structure))
-
-    rs = max(0, min(100, 55 + (ret5 - bench5) * 8 + ret20 * 1.2))
-    volume_score = max(0, min(100, vr / 3 * 100))
-    momentum = max(0, min(100, 50 + ret5 * 7 + ret20 * 1.5))
-    breakout = max(0, min(100, 55 + breakout_ratio * 18 + (pos20 - 70) * 0.7))
-    score = round(0.30 * breakout + 0.20 * (0.55 * retest + 0.45 * structure) + 0.20 * rs + 0.20 * volume_score + 0.10 * momentum)
-
-    structural_sl = float(low.iloc[-11:].min())
-    sl = max(structural_sl, p * 0.96)
-    if sl >= p:
-        sl = p * 0.96
-    risk_pct = (p - sl) / p * 100
-    t1, t2 = p * 1.04, p * 1.08
-    rr1 = (t1 - p) / (p - sl) if p > sl else 0
-    rr2 = (t2 - p) / (p - sl) if p > sl else 0
-
-    no_chase = ret5 > 9 or breakout_ratio > 4
-    if score < 55:
-        return None
-    if no_chase:
-        status = 'NO CHASE'
-    elif retest_hold and score >= 80 and vr >= 1.5 and rr1 >= 1.30:
-        status = 'BUY CANDIDATE'
-    elif p >= prev20high and broke_recent:
-        status = 'WAIT FOR RETEST'
-    elif p >= prev20high:
-        status = 'BREAKOUT WATCH'
-    else:
-        status = 'MOMENTUM WATCH'
-
-    pattern = 'Volume Breakout' if vr >= 1.8 and p >= prev20high * 0.995 else ('Breakout' if p >= prev20high else ('Retest Watch' if broke_recent else 'Momentum Watch'))
-    return {'s':sym,'n':sym,'p':round(p,2),'m':round(ret5,2),'v':round(vr,2),'b':round(breakout,1),'r':round(0.55*retest+0.45*structure,1),'rs':round(rs,1),'setup':status+' • '+pattern,'res':round(prev20high,2),'sup':round(sl,2),'ret20':round(ret20,2),'score':score,'status':status,'risk_pct':round(risk_pct,2),'rr1':round(rr1,2),'rr2':round(rr2,2),'target1':round(t1,2),'target2':round(t2,2),'retest_hold':retest_hold,'no_chase':no_chase}
-
+def scan_symbol(sym, d, bench5=0.0):
+    if d is None or len(d) < 35: return None
+    d=d.dropna()
+    if len(d)<35: return None
+    close=d['Close'].astype(float); high=d['High'].astype(float); low=d['Low'].astype(float); vol=d['Volume'].astype(float)
+    p=float(close.iloc[-1]); prev20high=float(high.iloc[-21:-1].max()); avgvol20=float(vol.iloc[-21:-1].mean())
+    vr=float(vol.iloc[-1]/avgvol20) if avgvol20 else 0.0
+    ret5=float((p/close.iloc[-6]-1)*100); ret20=float((p/close.iloc[-21]-1)*100)
+    breakout_ratio=(p/prev20high-1)*100 if prev20high else 0.0
+    range20=float(high.iloc[-21:-1].max()-low.iloc[-21:-1].min()); pos20=((p-float(low.iloc[-21:-1].min()))/range20*100) if range20 else 50
+    slope=float((p/close.iloc[-11]-1)*100); structure=max(0,min(100,50+slope*8+(pos20-50)*.5))
+    recent_high=high.iloc[-6:-1]; recent_low=low.iloc[-6:-1]; broke_recent=bool((recent_high>prev20high).any())
+    retest_hold=bool(broke_recent and recent_low.min()<=prev20high*1.015 and p>=prev20high*.995)
+    retest=92.0 if retest_hold else (max(45,min(82,82-abs(breakout_ratio)*8)) if broke_recent else max(30,min(75,structure)))
+    rs=max(0,min(100,55+(ret5-bench5)*8+ret20*1.2)); volume_score=max(0,min(100,vr/3*100)); momentum=max(0,min(100,50+ret5*7+ret20*1.5)); breakout=max(0,min(100,55+breakout_ratio*18+(pos20-70)*.7))
+    score=round(.30*breakout+.20*(.55*retest+.45*structure)+.20*rs+.20*volume_score+.10*momentum)
+    structural_sl=float(low.iloc[-11:].min()); sl=max(structural_sl,p*.96); sl=p*.96 if sl>=p else sl
+    risk_pct=(p-sl)/p*100; t1=p*1.04; t2=p*1.08; rr1=(t1-p)/(p-sl) if p>sl else 0; rr2=(t2-p)/(p-sl) if p>sl else 0
+    no_chase=ret5>9 or breakout_ratio>4
+    if score<55: return None
+    if no_chase: status='NO CHASE'
+    elif retest_hold and score>=80 and vr>=1.5 and rr1>=1.30: status='BUY CANDIDATE'
+    elif p>=prev20high and broke_recent: status='WAIT FOR RETEST'
+    elif p>=prev20high: status='BREAKOUT WATCH'
+    else: status='MOMENTUM WATCH'
+    pattern='Volume Breakout' if vr>=1.8 and p>=prev20high*.995 else ('Breakout' if p>=prev20high else ('Retest Watch' if broke_recent else 'Momentum Watch'))
+    return {'s':sym,'n':sym,'p':round(p,2),'m':round(ret5,2),'v':round(vr,2),'b':round(breakout,1),'r':round(.55*retest+.45*structure,1),'rs':round(rs,1),'setup':status+' • '+pattern,'res':round(prev20high,2),'sup':round(sl,2),'ret20':round(ret20,2),'score':score,'status':status,'risk_pct':round(risk_pct,2),'rr1':round(rr1,2),'rr2':round(rr2,2),'target1':round(t1,2),'target2':round(t2,2),'retest_hold':retest_hold,'no_chase':no_chase}
 
 def main():
-    syms = universe()
-    tickers = [s + '.NS' for s in syms]
-    print('Scanning', len(tickers), 'symbols', flush=True)
-
-    # Short daily window + smaller batches keeps the GitHub runner fast and predictable.
-    chunks = [tickers[i:i + 50] for i in range(0, len(tickers), 50)]
-    all_rows = []
-    bench5 = 0.0
+    syms=sorted(set(UNIVERSE)); tickers=[s+'.NS' for s in syms]; print('FAST SCAN:',len(tickers),'symbols',flush=True)
+    bench5=0.0
     try:
-        bench = yf.download('^NSEI', period='3mo', interval='1d', auto_adjust=False, progress=False, threads=False, timeout=15)
-        if bench is not None and len(bench) >= 6:
-            bclose = bench['Close'].squeeze().dropna()
-            if len(bclose) >= 6:
-                bench5 = float((bclose.iloc[-1] / bclose.iloc[-6] - 1) * 100)
-    except Exception as e:
-        print('Benchmark failed:', e, flush=True)
-
-    for i, chunk in enumerate(chunks, 1):
-        try:
-            raw = yf.download(chunk, period='2mo', interval='1d', auto_adjust=False, progress=False, group_by='ticker', threads=True, timeout=15)
-            for t in chunk:
-                try:
-                    if isinstance(raw.columns, pd.MultiIndex):
-                        if t not in raw.columns.get_level_values(0):
-                            continue
-                        d = raw[t]
-                    else:
-                        d = raw
-                    row = scan_symbol(t.replace('.NS', ''), d, bench5)
-                    if row:
-                        all_rows.append(row)
-                except Exception as e:
-                    print('symbol failed', t, e, flush=True)
-        except Exception as e:
-            print('batch failed', i, e, flush=True)
-        print(f'Batch {i}/{len(chunks)} complete; candidates={len(all_rows)}', flush=True)
-
-    all_rows.sort(key=lambda x: (x['status'] == 'BUY CANDIDATE', x['score'], x['rr2']), reverse=True)
-    top = all_rows[:50]
-    stamp = datetime.now(timezone.utc).isoformat()
-    OUT.write_text(json.dumps({'updated_utc':stamp,'universe_size':len(syms),'candidates_scanned':len(all_rows),'buy_candidates':sum(x['status']=='BUY CANDIDATE' for x in all_rows),'stocks':top}, indent=2), encoding='utf-8')
-
+        bench=yf.download('^NSEI',period='2mo',interval='1d',auto_adjust=False,progress=False,threads=False,timeout=10)
+        if bench is not None and len(bench)>=6:
+            bc=bench['Close'].squeeze().dropna(); bench5=float((bc.iloc[-1]/bc.iloc[-6]-1)*100) if len(bc)>=6 else 0.0
+    except Exception as e: print('Benchmark failed:',e,flush=True)
+    rows=[]
+    try:
+        raw=yf.download(tickers,period='2mo',interval='1d',auto_adjust=False,progress=False,group_by='ticker',threads=True,timeout=10)
+        for t in tickers:
+            try:
+                d=raw[t] if isinstance(raw.columns,pd.MultiIndex) and t in raw.columns.get_level_values(0) else None
+                r=scan_symbol(t.replace('.NS',''),d,bench5)
+                if r: rows.append(r)
+            except Exception as e: print('skip',t,e,flush=True)
+    except Exception as e: print('Batch download failed:',e,flush=True)
+    rows.sort(key=lambda x:(x['status']=='BUY CANDIDATE',x['score'],x['rr2']),reverse=True); top=rows[:50]; stamp=datetime.now(timezone.utc).isoformat()
+    OUT.write_text(json.dumps({'updated_utc':stamp,'universe_size':len(syms),'candidates_scanned':len(rows),'buy_candidates':sum(x['status']=='BUY CANDIDATE' for x in rows),'stocks':top},indent=2),encoding='utf-8')
     if top:
-        text = INDEX.read_text(encoding='utf-8')
-        arr = ',\n'.join(' ' + json.dumps(x, separators=(',', ':')) for x in top)
-        text = re.sub(r'const stocks=\[.*?\];', 'const stocks=[\n' + arr + '\n];', text, flags=re.S)
-        text = text.replace('ENGINE V2 • MARKET SNAPSHOT', 'ENGINE V2.1 • RISK FILTERED')
-        text = re.sub(r'Snapshot: [^<]+', 'Snapshot: ' + stamp, text)
-        INDEX.write_text(text, encoding='utf-8')
-    print('DONE | Top:', len(top), '| Scanned:', len(all_rows), '| BUY:', sum(x['status']=='BUY CANDIDATE' for x in all_rows), flush=True)
+        text=INDEX.read_text(encoding='utf-8'); arr=',\n'.join(' '+json.dumps(x,separators=(',',':')) for x in top)
+        text=re.sub(r'const stocks=\[.*?\];','const stocks=[\n'+arr+'\n];',text,flags=re.S); text=text.replace('ENGINE V2.1 • RISK FILTERED','ENGINE V2.2 • FAST LIVE SCAN'); INDEX.write_text(text,encoding='utf-8')
+    print('DONE | Top:',len(top),'| Scanned:',len(rows),'| BUY:',sum(x['status']=='BUY CANDIDATE' for x in rows),flush=True)
 
-if __name__ == '__main__':
-    main()
+if __name__=='__main__': main()
