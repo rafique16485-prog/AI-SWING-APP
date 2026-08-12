@@ -1,13 +1,51 @@
 <!DOCTYPE html>
-<html lang="hi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NSE AI Breakout Scanner</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body class="bg-slate-950 text-slate-100">
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#050b14" />
+  <title>Swing Hunter AI — Breakout & Momentum Scanner</title>
+  <style>
+    :root{--bg:#050b14;--card:#0b1422;--line:#1b2a3d;--text:#eaf2ff;--muted:#8ea0b8;--green:#22c55e;--yellow:#f59e0b;--red:#ef4444;--blue:#38bdf8}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#102033 0,#050b14 45%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+    .wrap{max-width:1100px;margin:auto;padding:16px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}.brand{font-size:22px;font-weight:800}.brand span{color:var(--green)}.sub{font-size:12px;color:var(--muted);margin-top:3px}.badge{padding:8px 11px;border:1px solid #24516c;border-radius:999px;background:#0b1b29;color:#7dd3fc;font-size:12px;font-weight:700}
+    .hero{background:linear-gradient(135deg,#0d1c2d,#09111d);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:14px}.hero h2{margin:0 0 7px;font-size:18px}.hero p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
+    .controls{display:grid;grid-template-columns:1fr auto auto;gap:9px;margin:14px 0}.input,.select,.btn{border:1px solid var(--line);background:#09121e;color:var(--text);border-radius:11px;padding:11px 12px;font-size:13px}.btn{cursor:pointer;font-weight:800}.btn.primary{background:#12351f;border-color:#246c3b;color:#86efac}.btn:active{transform:scale(.98)}
+    .grid{display:grid;grid-template-columns:1fr 340px;gap:14px}.card{background:rgba(11,20,34,.94);border:1px solid var(--line);border-radius:17px;overflow:hidden}.cardhead{padding:14px 15px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.cardhead b{font-size:14px}.small{font-size:11px;color:var(--muted)}
+    .table{width:100%;border-collapse:collapse}.table th,.table td{padding:11px 9px;border-bottom:1px solid #142236;text-align:left;font-size:12px}.table th{color:#7890ab;font-size:10px;text-transform:uppercase}.table tr{cursor:pointer}.table tr:hover{background:#0d1b2b}.sym{font-weight:800}.name{display:block;color:var(--muted);font-size:10px;margin-top:2px}.up{color:#4ade80}.down{color:#fb7185}.score{font-weight:900}.pill{display:inline-block;padding:4px 7px;border-radius:7px;font-size:10px;font-weight:900}.a{background:#12351f;color:#86efac}.b{background:#322b0d;color:#fcd34d}.c{background:#2b1820;color:#fda4af}.right{padding:15px}.metric{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #142236;font-size:12px}.metric span{color:var(--muted)}.scorebox{text-align:center;padding:18px 8px;border-bottom:1px solid var(--line)}.bigscore{font-size:45px;font-weight:950;line-height:1}.bar{height:8px;background:#142236;border-radius:9px;overflow:hidden;margin:12px 0}.fill{height:100%;background:linear-gradient(90deg,#f59e0b,#22c55e);border-radius:9px}.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.level{background:#08111d;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center}.level b{display:block;margin-top:4px}.green{color:#4ade80}.yellow{color:#facc15}.red{color:#fb7185}.foot{margin-top:14px;color:#71839b;font-size:11px;line-height:1.5;text-align:center}.notice{padding:10px 12px;background:#211a08;border:1px solid #5b4310;color:#fcd34d;border-radius:10px;font-size:11px;margin-top:12px}
+    @media(max-width:800px){.grid{grid-template-columns:1fr}.controls{grid-template-columns:1fr 1fr}.controls .input{grid-column:1/-1}.table th:nth-child(3),.table td:nth-child(3){display:none}.hero{padding:15px}.brand{font-size:19px}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div><div class="brand">⚡ SWING <span>HUNTER AI</span></div><div class="sub">Breakout • Volume • Momentum • Swing Setup</div></div><div class="badge">ENGINE V1 • DEMO DATA</div></div>
+  <div class="hero"><h2>🎯 4–9% Momentum Hunter</h2><p>Base → Volume Expansion → Breakout → Retest → Continuation. Score is a screening aid, not a guaranteed return or buy signal.</p></div>
+  <div class="controls"><input id="search" class="input" placeholder="Search stock (e.g. IFCI, SBIN)"/><select id="filter" class="select"><option value="all">All setups</option><option value="breakout">Breakout</option><option value="volume">Volume Blast</option><option value="swing">Swing Setup</option><option value="a">A+ only</option></select><button id="sort" class="btn primary">Sort: Score ↓</button></div>
+  <div class="grid">
+    <div class="card"><div class="cardhead"><b>🔥 TOP MOMENTUM RADAR</b><span id="count" class="small"></span></div><div style="overflow:auto"><table class="table"><thead><tr><th>Stock</th><th>Move</th><th>Volume</th><th>Setup</th><th>Score</th></tr></thead><tbody id="rows"></tbody></table></div></div>
+    <div class="card"><div class="cardhead"><b>📊 Setup Decoder</b><span class="small">tap a stock</span></div><div id="detail" class="right"></div></div>
+  </div>
+  <div class="foot">⚠️ Educational screening tool. Market data in this V1 is demo/sample data; connect a permitted live data source before using it for real decisions.</div>
+</div>
+<script>
+const stocks=[
+ {s:'IFCI',n:'IFCI Ltd.',p:74.25,m:-1.92,v:2.8,b:78,r:82,rs:76,setup:'Breakout Watch',res:78.8,sup:70.6},
+ {s:'SBIN',n:'State Bank of India',p:842.3,m:5.6,v:4.1,b:92,r:88,rs:91,setup:'Volume Breakout',res:878,sup:810},
+ {s:'TATASTEEL',n:'Tata Steel',p:174.5,m:4.82,v:3.8,b:89,r:84,rs:86,setup:'Resistance Breakout',res:184,sup:166},
+ {s:'ITC',n:'ITC Ltd.',p:432.15,m:3.9,v:3.2,b:85,r:80,rs:82,setup:'Cup & Handle',res:447,sup:421},
+ {s:'BHARTIARTL',n:'Bharti Airtel',p:1420,m:6.25,v:5.0,b:94,r:76,rs:93,setup:'Momentum Expansion',res:1480,sup:1378},
+ {s:'TATAMOTORS',n:'Tata Motors',p:988.4,m:2.8,v:1.9,b:81,r:78,rs:79,setup:'Flag Breakout',res:1020,sup:960},
+ {s:'RELIANCE',n:'Reliance Industries',p:2945.1,m:3.15,v:2.4,b:79,r:74,rs:81,setup:'Double Bottom',res:3010,sup:2870},
+ {s:'HDFCBANK',n:'HDFC Bank',p:1610.2,m:1.1,v:1.2,b:68,r:62,rs:70,setup:'Early Breakout Watch',res:1640,sup:1585}
+];
+let selected=stocks[1],descending=true;
+function score(x){let vol=Math.min(x.v/3,1)*25;let move=Math.min(Math.max(x.m,0)/6,1)*15;let raw=.30*x.b+.25*x.r+.20*x.rs+vol+move;return Math.round(Math.min(100,raw))}
+function setupType(x){if(x.v>=3&&x.b>=85)return 'volume';if(x.b>=85)return 'breakout';if(x.b>=75)return 'swing';return 'watch'}
+function verdict(sc){return sc>=85?'A+ SETUP':sc>=75?'A WATCH':sc>=65?'B WATCH':'AVOID'}
+function render(){let q=document.getElementById('search').value.toLowerCase(),f=document.getElementById('filter').value;let arr=stocks.filter(x=>x.s.toLowerCase().includes(q)||x.n.toLowerCase().includes(q));if(f==='a')arr=arr.filter(x=>score(x)>=85);else if(f!=='all')arr=arr.filter(x=>setupType(x)===f);arr.sort((a,b)=>descending?score(b)-score(a):score(a)-score(b));document.getElementById('count').textContent=arr.length+' candidates';document.getElementById('rows').innerHTML=arr.map(x=>{let sc=score(x),v=verdict(sc);return `<tr onclick="selectStock('${x.s}')"><td><span class="sym">${x.s}</span><span class="name">${x.n}</span></td><td class="${x.m>=0?'up':'down'}">${x.m>=0?'+':''}${x.m.toFixed(2)}%</td><td>${x.v.toFixed(1)}×</td><td>${x.setup}</td><td class="score">${sc} <span class="pill ${sc>=85?'a':sc>=75?'b':'c'}">${v}</span></td></tr>`}).join('');renderDetail()}
+function selectStock(s){selected=stocks.find(x=>x.s===s)||selected;render()}
+function renderDetail(){let x=selected,sc=score(x),risk=(x.p-x.sup),t1=x.p*1.04,t2=x.p*1.08,rr1=((t1-x.p)/risk).toFixed(1),rr2=((t2-x.p)/risk).toFixed(1);document.getElementById('detail').innerHTML=`<div class="scorebox"><div class="small">MOMENTUM SCORE</div><div class="bigscore">${sc}</div><div class="bar"><div class="fill" style="width:${sc}%"></div></div><b class="${sc>=85?'green':sc>=75?'yellow':'red'}">${verdict(sc)}</b></div><div class="metric"><span>Stock</span><b>${x.s}</b></div><div class="metric"><span>LTP</span><b>₹${x.p.toFixed(2)}</b></div><div class="metric"><span>Volume</span><b>${x.v.toFixed(1)}× avg</b></div><div class="metric"><span>Breakout strength</span><b>${x.b}/100</b></div><div class="metric"><span>Relative strength</span><b>${x.rs}/100</b></div><div class="metric"><span>Pattern</span><b>${x.setup}</b></div><div class="levels"><div class="level"><span class="small">SUPPORT / SL</span><b class="red">₹${x.sup.toFixed(2)}</b></div><div class="level"><span class="small">TARGET 1</span><b class="green">₹${t1.toFixed(2)}</b></div><div class="level"><span class="small">TARGET 2</span><b class="green">₹${t2.toFixed(2)}</b></div></div><div class="notice">Entry rule: breakout hold/retest confirmation. Do not chase an extended candle. Risk/reward to T1 ≈ 1:${rr1}; T2 ≈ 1:${rr2}.</div>`}
+document.getElementById('search').oninput=render;document.getElementById('filter').onchange=render;document.getElementById('sort').onclick=()=>{descending=!descending;document.getElementById('sort').textContent='Sort: Score '+(descending?'↓':'↑');render()};render();
+</script>
+</body>
 </html>
