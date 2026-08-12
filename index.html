@@ -18,25 +18,67 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><div><div class="brand">⚡ SWING <span>HUNTER AI</span></div><div class="sub">Breakout • Volume • Momentum • Swing Setup</div></div><div class="badge">ENGINE V1 • DEMO DATA</div></div>
+  <div class="top"><div><div class="brand">⚡ SWING <span>HUNTER AI</span></div><div class="sub">Breakout • Volume • Momentum • Swing Setup</div></div><div class="badge">ENGINE V2 • MARKET SNAPSHOT</div></div>
   <div class="hero"><h2>🎯 4–9% Momentum Hunter</h2><p>Base → Volume Expansion → Breakout → Retest → Continuation. Score ranks setup quality; it is not a guaranteed return or buy signal.</p></div>
   <div class="controls"><input id="search" class="input" placeholder="Search stock (e.g. IFCI, SBIN)"/><select id="filter" class="select"><option value="all">All setups</option><option value="breakout">Breakout</option><option value="volume">Volume Blast</option><option value="swing">Swing Setup</option><option value="a">A+ only</option></select><button id="sort" class="btn primary">Sort: Score ↓</button></div>
   <div class="grid">
-    <div class="card"><div class="cardhead"><b>🔥 TOP MOMENTUM RADAR</b><span id="count" class="small"></span></div><div class="legend">Score = Breakout 30% + Retest/Structure 20% + Relative Strength 20% + Volume 20% + Momentum 10%. Scores are intentionally not capped at 100 until the final calculation.</div><div style="overflow:auto"><table class="table"><thead><tr><th>Stock</th><th>Move</th><th>Volume</th><th>Setup</th><th>Score</th></tr></thead><tbody id="rows"></tbody></table></div></div>
+    <div class="card"><div class="cardhead"><b>🔥 TOP MOMENTUM RADAR</b><span id="count" class="small"></span></div><div class="legend">Score = Breakout 30% + Retest/Structure 20% + Relative Strength 20% + Volume 20% + Momentum 10%. Snapshot: 2026-08-12T06:09:37.280479+00:00</div><div style="overflow:auto"><table class="table"><thead><tr><th>Stock</th><th>Move</th><th>Volume</th><th>Setup</th><th>Score</th></tr></thead><tbody id="rows"></tbody></table></div></div>
     <div class="card"><div class="cardhead"><b>📊 Setup Decoder</b><span class="small">tap a stock</span></div><div id="detail" class="right"></div></div>
   </div>
-  <div class="foot">⚠️ Educational screening tool. Market data in this V1 is demo/sample data; connect a permitted live data source before using it for real decisions.</div>
+  <div class="foot">⚠️ Market snapshot generated automatically from public market-data sources. Verify price/volume on your broker before trading.</div>
 </div>
 <script>
 const stocks=[
- {s:'IFCI',n:'IFCI Ltd.',p:74.25,m:-1.92,v:2.8,b:78,r:82,rs:76,setup:'Breakout Watch',res:78.8,sup:70.6},
- {s:'SBIN',n:'State Bank of India',p:842.3,m:5.6,v:4.1,b:92,r:88,rs:91,setup:'Volume Breakout',res:878,sup:810},
- {s:'TATASTEEL',n:'Tata Steel',p:174.5,m:4.82,v:3.8,b:89,r:84,rs:86,setup:'Resistance Breakout',res:184,sup:166},
- {s:'ITC',n:'ITC Ltd.',p:432.15,m:3.9,v:3.2,b:85,r:80,rs:82,setup:'Cup & Handle',res:447,sup:421},
- {s:'BHARTIARTL',n:'Bharti Airtel',p:1420,m:6.25,v:5.0,b:94,r:76,rs:93,setup:'Momentum Expansion',res:1480,sup:1378},
- {s:'TATAMOTORS',n:'Tata Motors',p:988.4,m:2.8,v:1.9,b:81,r:78,rs:79,setup:'Flag Breakout',res:1020,sup:960},
- {s:'RELIANCE',n:'Reliance Industries',p:2945.1,m:3.15,v:2.4,b:79,r:74,rs:81,setup:'Double Bottom',res:3010,sup:2870},
- {s:'HDFCBANK',n:'HDFC Bank',p:1610.2,m:1.1,v:1.2,b:68,r:62,rs:70,setup:'Early Breakout Watch',res:1640,sup:1585}
+ {"s":"ARE&M","n":"ARE&M","p":988.55,"m":5.29,"v":3.0,"b":100,"r":89.0,"rs":100,"setup":"Volume Breakout","res":974.0,"sup":864.6,"ret20":9.74},
+ {"s":"FINCABLES","n":"FINCABLES","p":1313.45,"m":30.91,"v":20.91,"b":100,"r":89.0,"rs":100,"setup":"Volume Breakout","res":1224.5,"sup":967.0,"ret20":24.56},
+ {"s":"KPIL","n":"KPIL","p":1450.1,"m":13.02,"v":11.16,"b":100,"r":89.0,"rs":100,"setup":"Volume Breakout","res":1364.9,"sup":1262.3,"ret20":11.73},
+ {"s":"NATIONALUM","n":"NATIONALUM","p":416.15,"m":9.23,"v":3.74,"b":100,"r":89.0,"rs":100,"setup":"Volume Breakout","res":393.7,"sup":332.0,"ret20":15.12},
+ {"s":"VIJAYA","n":"VIJAYA","p":1462.8,"m":5.27,"v":2.64,"b":100,"r":89.0,"rs":100,"setup":"Volume Breakout","res":1441.8,"sup":1334.6,"ret20":5.33},
+ {"s":"PFIZER","n":"PFIZER","p":5135.3,"m":5.62,"v":2.3,"b":100,"r":89.0,"rs":100,"setup":"Volume Breakout","res":4934.6,"sup":4602.1,"ret20":8.54},
+ {"s":"HINDCOPPER","n":"HINDCOPPER","p":553.5,"m":3.69,"v":3.7,"b":82.2,"r":89.0,"rs":100,"setup":"Volume Breakout","res":552.0,"sup":469.0,"ret20":12.69},
+ {"s":"ANANDRATHI","n":"ANANDRATHI","p":2182.4,"m":7.11,"v":1.93,"b":100,"r":89.0,"rs":100,"setup":"Volume Breakout","res":2161.0,"sup":2003.1,"ret20":3.06},
+ {"s":"PNB","n":"PNB","p":118.3,"m":4.18,"v":2.05,"b":100,"r":89.0,"rs":100,"setup":"Volume Breakout","res":115.37,"sup":110.32,"ret20":12.67},
+ {"s":"BOSCHLTD","n":"BOSCHLTD","p":46645.0,"m":8.68,"v":1.63,"b":100,"r":89.0,"rs":100,"setup":"Breakout","res":45750.0,"sup":39705.0,"ret20":12.55},
+ {"s":"APARINDS","n":"APARINDS","p":17291.0,"m":12.04,"v":1.13,"b":100,"r":89.0,"rs":100,"setup":"Breakout","res":17043.0,"sup":13374.0,"ret20":24.87},
+ {"s":"CARBORUNIV","n":"CARBORUNIV","p":1154.5,"m":7.05,"v":1.0,"b":100,"r":89.0,"rs":100,"setup":"Breakout","res":1138.6,"sup":1043.2,"ret20":8.28},
+ {"s":"GMDCLTD","n":"GMDCLTD","p":608.45,"m":9.43,"v":1.4,"b":83.9,"r":89.0,"rs":100,"setup":"Breakout","res":606.55,"sup":548.1,"ret20":3.83},
+ {"s":"MCX","n":"MCX","p":2940.6,"m":13.16,"v":1.8,"b":74.8,"r":89.0,"rs":100,"setup":"Momentum Watch","res":2942.1,"sup":2565.5,"ret20":1.66},
+ {"s":"HINDALCO","n":"HINDALCO","p":1075.55,"m":3.42,"v":1.04,"b":91.0,"r":89.0,"rs":100,"setup":"Breakout","res":1068.75,"sup":938.15,"ret20":12.53},
+ {"s":"BELRISE","n":"BELRISE","p":257.69,"m":6.71,"v":1.46,"b":75.5,"r":89.0,"rs":100,"setup":"Momentum Watch","res":257.75,"sup":228.35,"ret20":9.65},
+ {"s":"FORCEMOT","n":"FORCEMOT","p":19080.0,"m":2.92,"v":0.94,"b":100,"r":89.0,"rs":93.6,"setup":"Breakout","res":18886.0,"sup":17002.0,"ret20":3.52},
+ {"s":"JSWDULUX","n":"JSWDULUX","p":3112.2,"m":4.0,"v":1.61,"b":75.7,"r":89.0,"rs":100,"setup":"Momentum Watch","res":3112.5,"sup":2915.4,"ret20":7.69},
+ {"s":"ZYDUSLIFE","n":"ZYDUSLIFE","p":1200.9,"m":7.12,"v":1.65,"b":67.3,"r":89.0,"rs":100,"setup":"Momentum Watch","res":1205.0,"sup":1093.2,"ret20":6.15},
+ {"s":"BERGEPAINT","n":"BERGEPAINT","p":556.0,"m":4.16,"v":1.36,"b":70.6,"r":89.0,"rs":100,"setup":"Momentum Watch","res":557.3,"sup":497.25,"ret20":13.68},
+ {"s":"ATHERENERG","n":"ATHERENERG","p":1545.0,"m":5.04,"v":0.3,"b":90.0,"r":89.0,"rs":100,"setup":"Breakout","res":1534.8,"sup":1191.1,"ret20":19.18},
+ {"s":"UNIONBANK","n":"UNIONBANK","p":185.98,"m":5.79,"v":0.67,"b":79.0,"r":89.0,"rs":100,"setup":"Breakout","res":185.74,"sup":167.7,"ret20":9.15},
+ {"s":"BEML","n":"BEML","p":1917.0,"m":14.68,"v":1.46,"b":51.5,"r":89.0,"rs":100,"setup":"Momentum Watch","res":1937.6,"sup":1668.1,"ret20":3.9},
+ {"s":"BDL","n":"BDL","p":1313.8,"m":5.95,"v":0.74,"b":64.8,"r":89.0,"rs":100,"setup":"Momentum Watch","res":1319.2,"sup":1232.5,"ret20":3.35},
+ {"s":"CPPLUS","n":"CPPLUS","p":3846.9,"m":9.94,"v":0.64,"b":64.9,"r":89.0,"rs":100,"setup":"Momentum Watch","res":3866.0,"sup":3253.8,"ret20":5.04},
+ {"s":"DIVISLAB","n":"DIVISLAB","p":8562.0,"m":2.07,"v":0.48,"b":70.0,"r":89.0,"rs":100,"setup":"Momentum Watch","res":8585.0,"sup":7428.5,"ret20":17.72},
+ {"s":"ENDURANCE","n":"ENDURANCE","p":3014.8,"m":4.2,"v":0.38,"b":70.6,"r":89.0,"rs":100,"setup":"Momentum Watch","res":3022.0,"sup":2712.8,"ret20":12.45},
+ {"s":"HEROMOTOCO","n":"HEROMOTOCO","p":5911.5,"m":3.89,"v":0.51,"b":66.6,"r":89.0,"rs":100,"setup":"Momentum Watch","res":5937.0,"sup":5127.7,"ret20":21.23},
+ {"s":"LENSKART","n":"LENSKART","p":590.3,"m":3.08,"v":0.69,"b":68.1,"r":89.0,"rs":100,"setup":"Momentum Watch","res":592.2,"sup":546.9,"ret20":8.44},
+ {"s":"SAILIFE","n":"SAILIFE","p":1467.9,"m":5.28,"v":0.34,"b":67.6,"r":89.0,"rs":100,"setup":"Momentum Watch","res":1473.5,"sup":1291.5,"ret20":16.2},
+ {"s":"APLAPOLLO","n":"APLAPOLLO","p":2005.4,"m":4.45,"v":0.58,"b":58.6,"r":89.0,"rs":100,"setup":"Momentum Watch","res":2020.0,"sup":1805.0,"ret20":9.23},
+ {"s":"LALPATHLAB","n":"LALPATHLAB","p":1963.8,"m":3.94,"v":0.25,"b":65.0,"r":89.0,"rs":100,"setup":"Momentum Watch","res":1973.5,"sup":1790.1,"ret20":12.56},
+ {"s":"PIDILITIND","n":"PIDILITIND","p":1688.5,"m":1.41,"v":0.52,"b":79.2,"r":89.0,"rs":86.4,"setup":"Breakout","res":1686.4,"sup":1601.0,"ret20":7.63},
+ {"s":"WELCORP","n":"WELCORP","p":1854.4,"m":6.78,"v":0.18,"b":63.3,"r":89.0,"rs":100,"setup":"Momentum Watch","res":1865.0,"sup":1610.2,"ret20":10.16},
+ {"s":"AUROPHARMA","n":"AUROPHARMA","p":1658.0,"m":4.55,"v":0.37,"b":54.9,"r":89.0,"rs":100,"setup":"Momentum Watch","res":1671.9,"sup":1536.8,"ret20":6.77},
+ {"s":"INDIANB","n":"INDIANB","p":891.85,"m":4.43,"v":0.62,"b":48.2,"r":89.0,"rs":100,"setup":"Momentum Watch","res":901.8,"sup":817.75,"ret20":7.38},
+ {"s":"MOTHERSON","n":"MOTHERSON","p":170.12,"m":10.22,"v":0.42,"b":52.0,"r":89.0,"rs":100,"setup":"Momentum Watch","res":172.0,"sup":143.86,"ret20":19.71},
+ {"s":"MAHABANK","n":"MAHABANK","p":81.54,"m":2.95,"v":1.4,"b":49.3,"r":75.7,"rs":91.7,"setup":"Momentum Watch","res":82.29,"sup":77.2,"ret20":1.8},
+ {"s":"RRKABEL","n":"RRKABEL","p":2783.0,"m":5.37,"v":0.18,"b":52.0,"r":89.0,"rs":100,"setup":"Momentum Watch","res":2815.0,"sup":2453.0,"ret20":25.04},
+ {"s":"GRASIM","n":"GRASIM","p":3358.1,"m":4.16,"v":0.84,"b":37.5,"r":89.0,"rs":100,"setup":"Momentum Watch","res":3411.1,"sup":3085.5,"ret20":8.81},
+ {"s":"KEI","n":"KEI","p":5654.7,"m":1.39,"v":0.31,"b":61.8,"r":89.0,"rs":89.6,"setup":"Momentum Watch","res":5691.0,"sup":4745.5,"ret20":10.43},
+ {"s":"ZFCVINDIA","n":"ZFCVINDIA","p":2630.9,"m":2.95,"v":0.06,"b":54.6,"r":89.0,"rs":100,"setup":"Momentum Watch","res":2656.0,"sup":2287.0,"ret20":13.73},
+ {"s":"AARTIIND","n":"AARTIIND","p":510.5,"m":5.05,"v":0.47,"b":44.1,"r":89.0,"rs":100,"setup":"Momentum Watch","res":516.95,"sup":476.8,"ret20":1.96},
+ {"s":"BAJAJ-AUTO","n":"BAJAJ-AUTO","p":11746.0,"m":1.26,"v":0.21,"b":55.1,"r":89.0,"rs":94.8,"setup":"Momentum Watch","res":11856.0,"sup":11094.0,"ret20":15.66},
+ {"s":"CANBK","n":"CANBK","p":131.37,"m":1.91,"v":0.79,"b":51.3,"r":89.0,"rs":85.9,"setup":"Momentum Watch","res":132.55,"sup":123.66,"ret20":3.87},
+ {"s":"CRAFTSMAN","n":"CRAFTSMAN","p":10585.0,"m":4.03,"v":0.49,"b":39.2,"r":89.0,"rs":100,"setup":"Momentum Watch","res":10762.0,"sup":9131.0,"ret20":15.58},
+ {"s":"EMCURE","n":"EMCURE","p":2016.6,"m":2.94,"v":0.6,"b":41.0,"r":89.0,"rs":100,"setup":"Momentum Watch","res":2048.0,"sup":1880.0,"ret20":12.64},
+ {"s":"EXIDEIND","n":"EXIDEIND","p":489.1,"m":4.73,"v":0.28,"b":43.0,"r":89.0,"rs":100,"setup":"Momentum Watch","res":496.4,"sup":420.35,"ret20":16.67},
+ {"s":"LAURUSLABS","n":"LAURUSLABS","p":1851.4,"m":0.89,"v":0.2,"b":53.5,"r":89.0,"rs":96.0,"setup":"Momentum Watch","res":1870.8,"sup":1754.3,"ret20":19.11},
+ {"s":"GRAPHITE","n":"GRAPHITE","p":732.9,"m":3.22,"v":0.19,"b":42.1,"r":89.0,"rs":100,"setup":"Momentum Watch","res":744.8,"sup":638.0,"ret20":19.64}
 ];
 let selected=stocks[1],descending=true;
 function score(x){const volume=Math.min(x.v/3,1)*20;const move=Math.min(Math.max(x.m,0)/6,1)*10;const raw=.30*x.b+.20*x.r+.20*x.rs+volume+move;return Math.round(Math.max(0,Math.min(100,raw)))}
