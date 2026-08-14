@@ -34,7 +34,11 @@ export default async function handler(req, res) {
       const query = symbol === 'NIFTY50' ? 'NIFTY' : symbol;
       const data = await upstox(`/v2/instruments/search?query=${encodeURIComponent(query)}&exchanges=NSE&segments=${symbol === 'NIFTY50' ? 'INDEX' : 'EQ'}&page_number=1&records=10`);
       const rows = Array.isArray(data?.data) ? data.data : [];
-      const exact = rows.find(x => String(x.trading_symbol || '').toUpperCase() === symbol) || rows[0];
+      const exact = rows.find(x => {
+        const trading = String(x.trading_symbol || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const short = String(x.short_name || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        return trading === symbol || short === symbol;
+      }) || rows[0];
       return exact ? { symbol, instrument_key: exact.instrument_key, trading_symbol: exact.trading_symbol, name: exact.name } : null;
     }));
 
@@ -45,8 +49,18 @@ export default async function handler(req, res) {
     const quote = await upstox(`/v3/market-quote/ltp?instrument_key=${encodeURIComponent(keys)}`);
     const byKey = quote?.data || {};
 
+    // Upstox V3 returns response-object keys in exchange:token format,
+    // while instrument_key uses exchange|token. Support both forms.
+    const getQuote = (instrumentKey) => {
+      return byKey[instrumentKey]
+        || byKey[instrumentKey.replace('|', ':')]
+        || byKey[instrumentKey.replace(':', '|')]
+        || Object.values(byKey).find(q => String(q?.instrument_token || '') === instrumentKey)
+        || {};
+    };
+
     const rows = instruments.map(x => {
-      const q = byKey[x.instrument_key] || {};
+      const q = getQuote(x.instrument_key);
       const last = Number(q.last_price ?? 0);
       const cp = Number(q.cp ?? 0);
       const changePct = cp ? ((last / cp) - 1) * 100 : null;
