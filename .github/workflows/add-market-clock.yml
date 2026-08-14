@@ -1,0 +1,43 @@
+name: Add Market Date Time
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-clock:
+    if: hashFiles('.market-clock-update') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Add live India date and time
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          html = p.read_text(encoding='utf-8')
+          if 'id="market-clock"' not in html:
+              clock = '''\n  <div id="market-clock" class="market-clock" aria-label="Market date and time">\n    <span>📅 <b id="market-date">--</b></span>\n    <span>🕒 <b id="market-time">--:--:--</b></span>\n    <span class="tz">IST • India</span>\n  </div>'''
+              html = html.replace('  <div class="hero">', clock + '\n  <div class="hero">', 1)
+              style = '''\n    .market-clock{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin:-2px 0 14px;padding:10px 12px;background:#08111d;border:1px solid var(--line);border-radius:12px;color:#dbeafe;font-size:12px}\n    .market-clock .tz{color:var(--muted);font-size:10px;font-weight:700}\n'''
+              html = html.replace('    @media(max-width:800px)', style + '    @media(max-width:800px)', 1)
+              js = '''\nfunction updateMarketClock(){\n  const now=new Date();\n  const date=new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',weekday:'short'}).format(now);\n  const time=new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}).format(now);\n  const d=document.getElementById('market-date');\n  const t=document.getElementById('market-time');\n  if(d)d.textContent=date;\n  if(t)t.textContent=time;\n}\nupdateMarketClock();\nsetInterval(updateMarketClock,1000);\n'''
+              html = html.replace('</script>', js + '</script>', 1)
+              p.write_text(html, encoding='utf-8')
+          PY
+          rm -f .market-clock-update
+
+      - name: Commit change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .market-clock-update
+          git diff --cached --quiet && exit 0
+          git commit -m "Add live India date and time to Swing Hunter"
+          git push
