@@ -21,43 +21,62 @@ async function upstox(path) {
   return data;
 }
 
+function clean(value) {
+  return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+async function resolveIndex(symbol) {
+  const isSensex = symbol === 'SENSEX';
+  const exchange = isSensex ? 'BSE' : 'NSE';
+  const query = isSensex ? 'SENSEX' : 'NIFTY';
+  const data = await upstox(
+    `/v2/instruments/search?query=${encodeURIComponent(query)}&exchanges=${exchange}&segments=INDEX&page_number=1&records=20`
+  );
+  const rows = Array.isArray(data?.data) ? data.data : [];
+  const exact = rows.find(x =>
+    clean(x.trading_symbol) === clean(symbol) ||
+    clean(x.short_name) === clean(symbol) ||
+    clean(x.name) === clean(symbol)
+  );
+  const preferred = exact || rows.find(x => clean(x.trading_symbol).includes(clean(symbol)) || clean(x.name).includes(clean(symbol)));
+  return preferred ? {
+    symbol,
+    instrument_key: preferred.instrument_key,
+    trading_symbol: preferred.trading_symbol,
+    name: preferred.name,
+    exchange,
+  } : null;
+}
+
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return json(res, 204, {});
   if (req.method !== 'GET') return json(res, 405, { error: 'GET only' });
 
   try {
-    const raw = String(req.query?.symbols || 'NIFTY50').split(',').map(s => s.trim().toUpperCase()).filter(Boolean).slice(0, 25);
-    const symbols = raw.length ? raw : ['NIFTY50'];
+    const raw = String(req.query?.symbols || 'NIFTY50,SENSEX')
+      .split(',').map(s => s.trim().toUpperCase()).filter(Boolean).slice(0, 25);
+    const symbols = raw.length ? raw : ['NIFTY50', 'SENSEX'];
 
-    // Resolve NSE equity/index symbols to Upstox instrument keys.
-    const resolved = await Promise.all(symbols.map(async (symbol) => {
-      const query = symbol === 'NIFTY50' ? 'NIFTY' : symbol;
-      const data = await upstox(`/v2/instruments/search?query=${encodeURIComponent(query)}&exchanges=NSE&segments=${symbol === 'NIFTY50' ? 'INDEX' : 'EQ'}&page_number=1&records=10`);
-      const rows = Array.isArray(data?.data) ? data.data : [];
-      const exact = rows.find(x => {
-        const trading = String(x.trading_symbol || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-        const short = String(x.short_name || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-        return trading === symbol || short === symbol;
-      }) || rows[0];
-      return exact ? { symbol, instrument_key: exact.instrument_key, trading_symbol: exact.trading_symbol, name: exact.name } : null;
+    const resolved = await Promise.all(symbols.map(async symbol => {
+      if (symbol === 'NIFTY' || symbol === 'NIFTY50') return resolveIndex('NIFTY50');
+      if (symbol === 'SENSEX') return resolveIndex('SENSEX');
+      return null;
     }));
 
     const instruments = resolved.filter(Boolean);
-    if (!instruments.length) return json(res, 404, { error: 'No instruments resolved', symbols });
+    if (!instruments.length) return json(res, 404, { error: 'No index instruments resolved', symbols });
 
     const keys = instruments.map(x => x.instrument_key).join(',');
     const quote = await upstox(`/v3/market-quote/ltp?instrument_key=${encodeURIComponent(keys)}`);
     const byKey = quote?.data || {};
 
-    // Upstox V3 returns response-object keys in exchange:token format,
-    // while instrument_key uses exchange|token. Support both forms.
-    const getQuote = (instrumentKey) => {
-      return byKey[instrumentKey]
-        || byKey[instrumentKey.replace('|', ':')]
-        || byKey[instrumentKey.replace(':', '|')]
-        || Object.values(byKey).find(q => String(q?.instrument_token || '') === instrumentKey)
-        || {};
-    };
+    const getQuote = (instrumentKey) => (
+      byKey[instrumentKey] ||
+      byKey[instrumentKey.replace('|', ':')] ||
+      byKey[instrumentKey.replace(':', '|')] ||
+      Object.values(byKey).find(q => String(q?.instrument_token || '') === instrumentKey) ||
+      {}
+    );
 
     const rows = instruments.map(x => {
       const q = getQuote(x.instrument_key);
@@ -68,6 +87,7 @@ export default async function handler(req, res) {
         symbol: x.symbol,
         trading_symbol: x.trading_symbol,
         name: x.name,
+        exchange: x.exchange,
         instrument_key: x.instrument_key,
         ltp: last,
         previous_close: cp,
@@ -80,7 +100,7 @@ export default async function handler(req, res) {
     return json(res, 200, {
       ok: true,
       provider: 'Upstox Analytics Token',
-      mode: 'live-snapshot',
+      mode: 'live-index-snapshot',
       updated_at_utc: new Date().toISOString(),
       rows,
     });
