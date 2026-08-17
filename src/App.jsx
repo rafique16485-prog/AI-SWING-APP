@@ -1,234 +1,67 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  TrendingUp, Search, Activity, ShieldAlert, Zap, Sliders, Award, 
-  RefreshCw, ArrowUpRight, Percent, BookOpen, Info, Clock, Calendar, Compass, Database, Wifi
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { TrendingUp, Sliders, Zap, RefreshCw, Database, Wifi, Search, BarChart3, Activity, ShieldAlert } from 'lucide-react';
 
-// डेटा में 9-EMA और VWAP जोड़ा गया है
 const INITIAL_STOCKS = [
-  { symbol: "TATASTEEL", name: "Tata Steel Ltd.", price: 174.50, change: 4.82, volume: "3.8x", rsi: 68, ema9: 168.20, vwap: 171.10, pattern: "Resistance Breakout", timeframe: "Daily", holdingPeriod: "5-10 Days" },
-  { symbol: "RELIANCE", name: "Reliance Industries", price: 2945.10, change: 3.15, volume: "2.4x", rsi: 62, ema9: 2910.50, vwap: 2930.00, pattern: "Double Bottom", timeframe: "4-Hour", holdingPeriod: "10-15 Days" },
-  { symbol: "INFY", name: "Infosys Ltd.", price: 1532.00, change: -0.45, volume: "0.8x", rsi: 48, ema9: 1545.00, vwap: 1538.50, pattern: "Consolidation", timeframe: "Daily", holdingPeriod: "N/A" },
-  { symbol: "SBIN", name: "State Bank of India", price: 842.30, change: 5.60, volume: "4.1x", rsi: 72, ema9: 815.40, vwap: 830.20, pattern: "Multi-Year Breakout", timeframe: "Daily", holdingPeriod: "8-12 Days" },
-  { symbol: "TATOMOTORS", name: "Tata Motors Ltd.", price: 988.40, change: 2.80, volume: "1.9x", rsi: 59, ema9: 975.00, vwap: 982.10, pattern: "Flag Breakout", timeframe: "4-Hour", holdingPeriod: "4-7 Days" },
-  { symbol: "HDFCBANK", name: "HDFC Bank Ltd.", price: 1610.20, change: 1.10, volume: "1.2x", rsi: 54, ema9: 1605.00, vwap: 1612.50, pattern: "Channel Resistance", timeframe: "4-Hour", holdingPeriod: "6-12 Days" },
-  { symbol: "ITC", name: "ITC Ltd.", price: 432.15, change: 3.90, volume: "3.2x", rsi: 65, ema9: 420.50, vwap: 428.00, pattern: "Cup & Handle", timeframe: "Daily", holdingPeriod: "10-18 Days" },
-  { symbol: "BHARTIARTL", name: "Bharti Airtel", price: 1420.00, change: 6.25, volume: "5.0x", rsi: 78, ema9: 1380.00, vwap: 1405.50, pattern: "All-Time High", timeframe: "Daily", holdingPeriod: "5-10 Days" }
+  { symbol:'TATASTEEL', name:'Tata Steel Ltd.', price:174.50, change:4.82, volume:'3.8x', ema9:168.20, vwap:171.10, timeframe:'Daily' },
+  { symbol:'RELIANCE', name:'Reliance Industries', price:2945.10, change:3.15, volume:'2.4x', ema9:2910.50, vwap:2930.00, timeframe:'4-Hour' },
+  { symbol:'INFY', name:'Infosys Ltd.', price:1532.00, change:-0.45, volume:'0.8x', ema9:1545.00, vwap:1538.50, timeframe:'Daily' },
+  { symbol:'SBIN', name:'State Bank of India', price:842.30, change:5.60, volume:'4.1x', ema9:815.40, vwap:830.20, timeframe:'Daily' },
+  { symbol:'TATOMOTORS', name:'Tata Motors Ltd.', price:988.40, change:2.80, volume:'1.9x', ema9:975.00, vwap:982.10, timeframe:'4-Hour' },
+  { symbol:'HDFCBANK', name:'HDFC Bank Ltd.', price:1610.20, change:1.10, volume:'1.2x', ema9:1605.00, vwap:1612.50, timeframe:'4-Hour' },
+  { symbol:'ITC', name:'ITC Ltd.', price:432.15, change:3.90, volume:'3.2x', ema9:420.50, vwap:428.00, timeframe:'Daily' },
+  { symbol:'BHARTIARTL', name:'Bharti Airtel', price:1420.00, change:6.25, volume:'5.0x', ema9:1380.00, vwap:1405.50, timeframe:'Daily' }
 ];
+const INDEX_START = [
+  { symbol:'NIFTY50', name:'NIFTY 50', ltp:0, change_pct:0, volume:0, exchange:'NSE' },
+  { symbol:'SENSEX', name:'SENSEX', ltp:0, change_pct:0, volume:0, exchange:'BSE' }
+];
+const money = n => Number(n || 0).toLocaleString('en-IN',{maximumFractionDigits:2});
 
-export default function App() {
-  const [stocks, setStocks] = useState(INITIAL_STOCKS);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStock, setSelectedStock] = useState(INITIAL_STOCKS[0]);
-  const [aiAnalysis, setAiAnalysis] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [filterVolume, setFilterVolume] = useState("all");
-  
-  // API कनेक्शन स्टेट्स
-  const [apiConnected, setApiConnected] = useState(false);
-  const [connecting, setConnecting] = useState(false);
-  
-  const [capital, setCapital] = useState(100000);
-  const [riskPercent, setRiskPercent] = useState(1);
-  const [calcEntry, setCalcEntry] = useState(174.50);
-  const [calcSL, setCalcSL] = useState(165.75);
-  const [calcTarget1, setCalcTarget1] = useState(192.00);
-  const [quantity, setQuantity] = useState(0);
+export default function App(){
+  const [stocks,setStocks]=useState(INITIAL_STOCKS);
+  const [indices,setIndices]=useState(INDEX_START);
+  const [mode,setMode]=useState('stocks');
+  const [selectedStock,setSelectedStock]=useState(INITIAL_STOCKS[0]);
+  const [selectedIndex,setSelectedIndex]=useState(INDEX_START[0]);
+  const [searchQuery,setSearchQuery]=useState('');
+  const [filterVolume,setFilterVolume]=useState('all');
+  const [apiConnected,setApiConnected]=useState(false);
+  const [connecting,setConnecting]=useState(false);
+  const [apiError,setApiError]=useState('');
+  const [lastUpdated,setLastUpdated]=useState('');
+  const [aiAnalysis,setAiAnalysis]=useState('');
+  const [loading,setLoading]=useState(false);
+  const [capital]=useState(5000);
+  const [riskPercent]=useState(1);
+  const [calcEntry,setCalcEntry]=useState(174.50);
+  const [calcSL,setCalcSL]=useState(165.75);
+  const [calcTarget1,setCalcTarget1]=useState(192.00);
+  const [quantity,setQuantity]=useState(0);
 
-  // लाइव डेटा सिमुलेशन / API ब्रिज
-  useEffect(() => {
-    let interval;
-    if (apiConnected) {
-      // यह असली API (जैसे WebSockets) का सिमुलेशन है
-      interval = setInterval(() => {
-        setStocks(prevStocks => 
-          prevStocks.map(stock => {
-            const priceChange = (Math.random() * 0.8 - 0.4); 
-            const newPrice = Number((stock.price * (1 + priceChange / 100)).toFixed(2));
-            const newChange = Number((stock.change + priceChange).toFixed(2));
-            
-            // VWAP और 9-EMA भी प्राइस के साथ थोड़ा मूव करेंगे
-            const newVwap = Number((stock.vwap + (newPrice - stock.price) * 0.3).toFixed(2));
-            
-            if (selectedStock && stock.symbol === selectedStock.symbol) {
-              updateTradeLevels(newPrice);
-            }
-            return { ...stock, price: newPrice, change: newChange, vwap: newVwap };
-          })
-        );
-      }, 2000);
-    }
-    return () => clearInterval(interval);
-  }, [apiConnected, selectedStock]);
+  const updateTradeLevels=(price,direction='long')=>{const p=Number(price||0);setCalcEntry(p);if(direction==='short'){setCalcSL(Number((p*1.02).toFixed(2)));setCalcTarget1(Number((p*0.96).toFixed(2)));}else{setCalcSL(Number((p*0.98).toFixed(2)));setCalcTarget1(Number((p*1.04).toFixed(2)));}};
+  const fetchLiveIndices=async()=>{try{setApiError('');const res=await fetch('/api/live-market?symbols=NIFTY50,SENSEX',{cache:'no-store'});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||'Live API failed');setIndices(data.rows||[]);setLastUpdated(new Date().toLocaleTimeString('en-IN'));return true;}catch(err){setApiError(err.message||'Live data unavailable');return false;}};
+  useEffect(()=>{if(!apiConnected)return;fetchLiveIndices();const t=setInterval(fetchLiveIndices,5000);return()=>clearInterval(t);},[apiConnected]);
+  const toggleApiConnection=async()=>{if(apiConnected){setApiConnected(false);return;}setConnecting(true);const ok=await fetchLiveIndices();setConnecting(false);if(ok)setApiConnected(true);};
+  useEffect(()=>{const riskAmt=capital*riskPercent/100;const unitRisk=Math.abs(calcEntry-calcSL);setQuantity(unitRisk>0?Math.floor(riskAmt/unitRisk):0);},[capital,riskPercent,calcEntry,calcSL]);
+  const filteredStocks=stocks.filter(s=>{const q=s.symbol.toLowerCase().includes(searchQuery.toLowerCase());const v=parseFloat(s.volume);return q&&(filterVolume==='all'||(filterVolume==='high'&&v>=3)||(filterVolume==='medium'&&v>=1.5&&v<3));});
+  const selectStock=s=>{setMode('stocks');setSelectedStock(s);updateTradeLevels(s.price,s.price>=s.vwap?'long':'short');setAiAnalysis('');};
+  const selectIndex=i=>{setMode('indices');setSelectedIndex(i);updateTradeLevels(i.ltp,Number(i.change_pct)>=0?'long':'short');setAiAnalysis('');};
+  const handleAIAnalysis=()=>{setLoading(true);setAiAnalysis('');setTimeout(()=>{if(mode==='indices'){const i=selectedIndex;const ch=Number(i.change_pct||0);const bias=ch>0.25?'BULLISH WATCH':ch<-0.25?'BEARISH WATCH':'SIDEWAYS / WAIT';setAiAnalysis(`🤖 INDEX ANALYSIS: ${i.name}\n\nLTP: ₹${money(i.ltp)}\nDay Move: ${ch>=0?'+':''}${ch.toFixed(2)}%\nMarket Bias: ${bias}\n\n🎯 Confirm on 5-min chart: VWAP + opening range + market structure.\n⚠️ Planning only — automatic order placement is OFF.`);}else{const s=selectedStock;const bullish=s.price>s.vwap&&s.price>s.ema9;setAiAnalysis(`🤖 STOCK ANALYSIS: ${s.symbol}\n\nPrice: ₹${money(s.price)}\n9-EMA: ₹${money(s.ema9)} → ${s.price>s.ema9?'Above ✅':'Below ❌'}\nVWAP: ₹${money(s.vwap)} → ${s.price>s.vwap?'Above ✅':'Below ❌'}\n\n🎯 Bias: ${bullish?'LONG WATCH':'WAIT / PULLBACK'}\nRisk: 1% capital rule + predefined SL.`);}setLoading(false);},700);};
 
-  const toggleApiConnection = () => {
-    if (!apiConnected) {
-      setConnecting(true);
-      setTimeout(() => {
-        setConnecting(false);
-        setApiConnected(true);
-      }, 1500);
-    } else {
-      setApiConnected(false);
-    }
-  };
-
-  const updateTradeLevels = (price) => {
-    setCalcEntry(price);
-    setCalcSL(Number((price * 0.95).toFixed(2)));
-    setCalcTarget1(Number((price * 1.10).toFixed(2)));
-  };
-
-  useEffect(() => {
-    const riskAmt = (capital * riskPercent) / 100;
-    const perShareRisk = calcEntry - calcSL;
-    if (perShareRisk > 0 && calcEntry > 0) {
-      setQuantity(Math.floor(riskAmt / perShareRisk));
-    } else {
-      setQuantity(0);
-    }
-  }, [capital, riskPercent, calcEntry, calcSL]);
-
-  const filteredStocks = stocks.filter(stock => {
-    const matchesSearch = stock.symbol.toLowerCase().includes(searchQuery.toLowerCase());
-    const volNum = parseFloat(stock.volume);
-    const matchesVolume = filterVolume === "all" || (filterVolume === "high" && volNum >= 3.0) || (filterVolume === "medium" && volNum >= 1.5 && volNum < 3.0);
-    return matchesSearch && matchesVolume;
-  });
-
-  const selectForAnalysis = (stock) => {
-    setSelectedStock(stock);
-    updateTradeLevels(stock.price);
-    setAiAnalysis("");
-  };
-
-  const handleAIAnalysis = async () => {
-    if (!selectedStock) return;
-    setLoading(true);
-    setAiAnalysis("");
-    
-    // API Key की आवश्यकता नहीं है, सिमुलेटेड रिस्पॉन्स फास्ट स्पीड के लिए
-    setTimeout(() => {
-      const isBullish = selectedStock.price > selectedStock.vwap && selectedStock.price > selectedStock.ema9;
-      setAiAnalysis(`🤖 **AI मास्टर स्नाइपर एनालिसिस: ${selectedStock.symbol}**\n\n` +
-        `📊 **मोमेंटम चेक:**\n` +
-        `• **9-EMA (${selectedStock.ema9}):** प्राइस 9-EMA के ${selectedStock.price > selectedStock.ema9 ? 'ऊपर (Bullish ✅)' : 'नीचे (Bearish ❌)'} है।\n` +
-        `• **VWAP (${selectedStock.vwap}):** प्राइस VWAP के ${selectedStock.price > selectedStock.vwap ? 'ऊपर है (संस्थागत खरीद ✅)' : 'नीचे है ❌'}।\n\n` +
-        `🎯 **ट्रेड सेटअप:**\n` +
-        `${isBullish ? 'स्टॉक में बहुत मजबूत मोमेंटम है। 9-EMA और VWAP दोनों का सपोर्ट मिल रहा है। ' : 'अभी एंट्री न लें। स्टॉक VWAP या 9-EMA के पास रेजिस्टेंस ले रहा है। पुलबैक का इंतज़ार करें। '}` +
-        `ऑटो-कैलकुलेटेड रिस्क-रिवॉर्ड 1:2 के साथ स्टॉप-लॉस को स्ट्रिक्ट रखें।`
-      );
-      setLoading(false);
-    }, 1500);
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500 selection:text-slate-900">
-      
-      {/* हेडर */}
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-emerald-500/15 p-2 rounded-xl border border-emerald-500/30">
-              <TrendingUp className="w-8 h-8 text-emerald-400 animate-pulse" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-                मास्टर स्नाइपर <span className="text-emerald-400">स्कैनर</span>
-              </h1>
-              <p className="text-xs text-slate-400">9-EMA + VWAP मोमेंटम ट्रैकर</p>
-            </div>
-          </div>
-          
-          {/* API कनेक्शन बटन */}
-          <button 
-            onClick={toggleApiConnection}
-            disabled={connecting}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${apiConnected ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : connecting ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'}`}
-          >
-            {connecting ? <RefreshCw className="w-4 h-4 animate-spin" /> : apiConnected ? <Wifi className="w-4 h-4" /> : <Database className="w-4 h-4" />}
-            {connecting ? "Connecting Broker..." : apiConnected ? "Live API Connected" : "Connect Live API"}
-          </button>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* बायां हिस्सा: स्टॉक लिस्ट */}
-        <div className="lg:col-span-8 space-y-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-            <div className="p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <h3 className="font-bold text-white flex items-center gap-2"><Sliders className="w-5 h-5 text-emerald-400" /> मोमेंटम स्कैन (VWAP + EMA)</h3>
-              <div className="flex gap-2">
-                <button onClick={() => setFilterVolume("all")} className={`px-3 py-1 text-xs rounded-lg ${filterVolume === "all" ? "bg-emerald-500 text-slate-950 font-bold" : "bg-slate-800 text-slate-300"}`}>सभी</button>
-                <button onClick={() => setFilterVolume("high")} className={`px-3 py-1 text-xs rounded-lg ${filterVolume === "high" ? "bg-emerald-500 text-slate-950 font-bold" : "bg-slate-800 text-slate-300"}`}>मोमेंटम (>3x)</button>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-slate-950/80 border-b border-slate-850 text-slate-400 text-xs font-semibold uppercase">
-                    <th className="p-4">स्टॉक विवरण</th>
-                    <th className="p-4">कीमत (LTP)</th>
-                    <th className="p-4">9-EMA</th>
-                    <th className="p-4">VWAP</th>
-                    <th className="p-4 text-center">सिग्नल</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-850">
-                  {filteredStocks.map((stock) => {
-                    const isSelected = selectedStock && selectedStock.symbol === stock.symbol;
-                    const isBullish = stock.price > stock.vwap && stock.price > stock.ema9;
-
-                    return (
-                      <tr key={stock.symbol} className={`hover:bg-slate-850/55 cursor-pointer ${isSelected ? "bg-emerald-950/25 border-l-4 border-emerald-500" : ""}`} onClick={() => selectForAnalysis(stock)}>
-                        <td className="p-4 font-bold text-white">{stock.symbol}<span className="text-xs text-slate-450 block font-normal">{stock.timeframe}</span></td>
-                        <td className={`p-4 font-mono font-bold ${stock.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>₹{stock.price.toFixed(2)}</td>
-                        <td className="p-4 font-mono text-slate-300 text-sm">₹{stock.ema9.toFixed(2)}</td>
-                        <td className="p-4 font-mono text-amber-400/90 text-sm">₹{stock.vwap.toFixed(2)}</td>
-                        <td className="p-4 text-center">
-                          {isBullish ? (
-                            <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded text-xs font-bold">BUY (STRONG)</span>
-                          ) : (
-                            <span className="bg-slate-800 text-slate-400 border border-slate-700 px-2 py-1 rounded text-xs font-bold">WAIT</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* दायां हिस्सा: एनालाइजर */}
-        <div className="lg:col-span-4 space-y-6">
-          
-          {selectedStock && (
-            <div className="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-emerald-500/40 rounded-2xl p-5 shadow-2xl space-y-4">
-              <div>
-                <span className="text-[10px] bg-emerald-500/10 text-emerald-300 font-bold px-2 py-0.5 rounded-full uppercase border border-emerald-500/20">ऑटो-ट्रेड ब्लूप्रिंट</span>
-                <h3 className="font-extrabold text-xl text-white mt-1">{selectedStock.symbol}</h3>
-              </div>
-              
-              <div className="space-y-2 pt-1">
-                <div className="bg-emerald-950/15 border border-emerald-500/20 p-3 rounded-xl flex justify-between items-center"><span className="text-xs text-emerald-400 font-semibold">🎯 एंट्री ज़ोन (VWAP Support)</span><span className="font-mono font-bold text-emerald-400">₹{calcEntry.toFixed(2)}</span></div>
-                <div className="bg-rose-950/15 border border-rose-500/20 p-3 rounded-xl flex justify-between items-center"><span className="text-xs text-rose-400 font-semibold">🛑 स्टॉप लॉस (EMA9 Below)</span><span className="font-mono font-bold text-rose-400">₹{calcSL.toFixed(2)}</span></div>
-                <div className="bg-blue-950/15 border border-blue-500/20 p-3 rounded-xl flex justify-between items-center"><span className="text-xs text-blue-400 font-semibold">📈 टारगेट (1:2 RR)</span><span className="font-mono font-bold text-blue-400">₹{calcTarget1.toFixed(2)}</span></div>
-              </div>
-            </div>
-          )}
-
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-            <h3 className="font-bold text-white flex items-center gap-2"><Zap className="w-5 h-5 text-emerald-400" /> मास्टर स्नाइपर रिपोर्ट</h3>
-            <button onClick={handleAIAnalysis} disabled={loading} className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 text-slate-950 py-2 rounded-xl text-sm font-bold transition-all">{loading ? "एनालिसिस हो रहा है..." : `सिग्नल चेक करें`}</button>
-            <div className="bg-slate-950/80 border border-slate-850 rounded-xl p-4 min-h-[150px] overflow-y-auto text-xs text-slate-300 whitespace-pre-line">{aiAnalysis || "ऊपर बटन दबाकर VWAP और 9-EMA मोमेंटम की जाँच करें।"}</div>
-          </div>
-          
-        </div>
-      </main>
-    </div>
-  );
+  return <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
+    <header className="border-b border-slate-800 bg-slate-900/90 sticky top-0 z-50"><div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div className="flex items-center gap-3"><div className="bg-emerald-500/15 p-2 rounded-xl border border-emerald-500/30"><TrendingUp className="w-8 h-8 text-emerald-400"/></div><div><h1 className="text-xl sm:text-2xl font-bold text-white">SWING HUNTER <span className="text-emerald-400">AI</span></h1><p className="text-xs text-slate-400">Stocks • NIFTY 50 • SENSEX • Risk Defined Setup</p></div></div>
+      <button onClick={toggleApiConnection} disabled={connecting} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold ${apiConnected?'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30':connecting?'bg-amber-500/20 text-amber-400 border border-amber-500/30':'bg-slate-800 text-slate-200 border border-slate-700'}`}>{connecting?<RefreshCw className="w-4 h-4 animate-spin"/>:apiConnected?<Wifi className="w-4 h-4"/>:<Database className="w-4 h-4"/>}{connecting?'Connecting...':apiConnected?'LIVE UPSTOX':'Connect Live API'}</button>
+    </div></header>
+    <main className="max-w-7xl mx-auto px-4 py-5 space-y-5">
+      <div className="grid grid-cols-2 gap-3">{indices.map(i=>{const pos=Number(i.change_pct)>=0;const active=mode==='indices'&&selectedIndex.symbol===i.symbol;return <button key={i.symbol} onClick={()=>selectIndex(i)} className={`text-left p-4 rounded-2xl border ${active?'border-emerald-500/60 bg-emerald-950/30':'border-slate-800 bg-slate-900'}`}><div className="flex justify-between"><span className="font-bold">{i.name}</span><BarChart3 className="w-4 h-4 text-slate-500"/></div><div className="mt-2 text-2xl font-mono font-bold">{i.ltp?`₹${money(i.ltp)}`:'—'}</div><div className={`text-sm font-bold ${pos?'text-emerald-400':'text-rose-400'}`}>{i.ltp?`${pos?'+':''}${Number(i.change_pct).toFixed(2)}%`:'Connect API'}</div><div className="text-[10px] text-slate-500 mt-1">{i.exchange} • LIVE SNAPSHOT</div></button>})}</div>
+      {apiError&&<div className="bg-rose-950/30 border border-rose-500/30 text-rose-300 rounded-xl p-3 text-xs">⚠️ {apiError}</div>}
+      {apiConnected&&<div className="text-[11px] text-emerald-400 flex items-center gap-2"><Activity className="w-3 h-3"/>Live index refresh every 5 seconds • Last update {lastUpdated}</div>}
+      <div className="flex gap-2 bg-slate-900 p-2 rounded-2xl border border-slate-800"><button onClick={()=>setMode('stocks')} className={`flex-1 py-3 rounded-xl font-bold ${mode==='stocks'?'bg-emerald-500 text-slate-950':'text-slate-400'}`}>📈 STOCKS</button><button onClick={()=>setMode('indices')} className={`flex-1 py-3 rounded-xl font-bold ${mode==='indices'?'bg-emerald-500 text-slate-950':'text-slate-400'}`}>🇮🇳 NIFTY / SENSEX</button></div>
+      {mode==='stocks'?<div className="grid grid-cols-1 lg:grid-cols-12 gap-5"><div className="lg:col-span-8 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden"><div className="p-4 border-b border-slate-800 flex flex-col sm:flex-row gap-3 justify-between"><div className="flex items-center gap-2"><Sliders className="w-5 h-5 text-emerald-400"/><b>Momentum Scanner</b></div><div className="flex gap-2"><div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg px-2"><Search className="w-4 h-4 text-slate-500"/><input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Stock..." className="bg-transparent outline-none px-2 py-1 text-xs w-24"/></div><button onClick={()=>setFilterVolume(filterVolume==='high'?'all':'high')} className="px-3 py-1 text-xs rounded-lg bg-slate-800">{filterVolume==='high'?'All':'>3x Volume'}</button></div></div><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-950 text-slate-500 text-xs"><tr><th className="p-3">Stock</th><th className="p-3">LTP</th><th className="p-3">9-EMA</th><th className="p-3">VWAP</th><th className="p-3">Setup</th></tr></thead><tbody className="divide-y divide-slate-800">{filteredStocks.map(s=>{const bull=s.price>s.vwap&&s.price>s.ema9;const active=selectedStock.symbol===s.symbol;return <tr key={s.symbol} onClick={()=>selectStock(s)} className={`cursor-pointer hover:bg-slate-800 ${active?'bg-emerald-950/25':''}`}><td className="p-3 font-bold">{s.symbol}<span className="block text-[10px] text-slate-500">{s.timeframe}</span></td><td className={`p-3 font-mono font-bold ${s.change>=0?'text-emerald-400':'text-rose-400'}`}>₹{money(s.price)}</td><td className="p-3 font-mono text-slate-300">₹{money(s.ema9)}</td><td className="p-3 font-mono text-amber-400">₹{money(s.vwap)}</td><td className="p-3">{bull?<span className="text-emerald-400 font-bold text-xs">LONG WATCH</span>:<span className="text-slate-500 font-bold text-xs">WAIT</span>}</td></tr>})}</tbody></table></div></div><div className="lg:col-span-4 space-y-5"><SetupCard symbol={selectedStock.symbol} entry={calcEntry} sl={calcSL} target={calcTarget1} quantity={quantity}/><AnalysisCard loading={loading} onAnalyze={handleAIAnalysis} text={aiAnalysis}/></div></div>:<div className="grid grid-cols-1 lg:grid-cols-12 gap-5"><div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4">{indices.map(i=>{const pos=Number(i.change_pct)>=0;const active=selectedIndex.symbol===i.symbol;return <button key={i.symbol} onClick={()=>selectIndex(i)} className={`text-left p-5 rounded-2xl border ${active?'border-emerald-500/60 bg-emerald-950/20':'border-slate-800 bg-slate-900'}`}><div className="flex justify-between"><span className="text-lg font-bold">{i.name}</span><span className="text-xs text-slate-500">{i.exchange}</span></div><div className="text-3xl font-mono font-bold mt-5">{i.ltp?`₹${money(i.ltp)}`:'—'}</div><div className={`text-lg font-bold ${pos?'text-emerald-400':'text-rose-400'}`}>{i.ltp?`${pos?'+':''}${Number(i.change_pct).toFixed(2)}%`:'Live API connect करें'}</div><div className="mt-5 text-xs text-slate-400">Volume: {i.volume?Number(i.volume).toLocaleString('en-IN'):'—'}</div></button>})}<div className="md:col-span-2 bg-amber-950/20 border border-amber-500/20 rounded-2xl p-4 text-xs text-amber-200 flex gap-2"><ShieldAlert className="w-4 h-4 shrink-0"/>Index mode live LTP/change दिखाता है. Entry से पहले 5-min chart, VWAP, opening range और market structure confirm करें.</div></div><div className="lg:col-span-4 space-y-5"><SetupCard symbol={selectedIndex.name} entry={calcEntry} sl={calcSL} target={calcTarget1} quantity={quantity}/><AnalysisCard loading={loading} onAnalyze={handleAIAnalysis} text={aiAnalysis}/></div></div>}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-xs text-slate-500 text-center">⚠️ Planning/analysis tool only. No automatic order placement. Always verify live price and risk with your broker before trading.</div>
+    </main></div>;
 }
+
+function SetupCard({symbol,entry,sl,target,quantity}){return <div className="bg-slate-900 border-2 border-emerald-500/30 rounded-2xl p-5 space-y-3"><div className="flex items-center gap-2"><Zap className="w-5 h-5 text-emerald-400"/><h3 className="font-bold">Risk-Defined Setup</h3></div><div className="text-xl font-extrabold text-white">{symbol}</div><div className="flex justify-between bg-emerald-950/20 p-3 rounded-xl"><span className="text-xs text-emerald-300">Entry</span><b>₹{money(entry)}</b></div><div className="flex justify-between bg-rose-950/20 p-3 rounded-xl"><span className="text-xs text-rose-300">Stop Loss</span><b className="text-rose-400">₹{money(sl)}</b></div><div className="flex justify-between bg-blue-950/20 p-3 rounded-xl"><span className="text-xs text-blue-300">Target</span><b className="text-blue-400">₹{money(target)}</b></div><div className="flex justify-between text-xs text-slate-400"><span>Risk quantity</span><b className="text-white">{quantity}</b></div></div>}
+function AnalysisCard({loading,onAnalyze,text}){return <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3"><div className="flex items-center gap-2"><Activity className="w-5 h-5 text-emerald-400"/><h3 className="font-bold">Master Sniper Report</h3></div><button onClick={onAnalyze} disabled={loading} className="w-full bg-emerald-500 text-slate-950 py-3 rounded-xl font-bold">{loading?'Analysis...':'Signal Check'}</button><div className="bg-slate-950 border border-slate-800 rounded-xl p-4 min-h-[160px] text-xs text-slate-300 whitespace-pre-line">{text||'Signal Check दबाकर selected stock/index का bias देखें।'}</div></div>}
