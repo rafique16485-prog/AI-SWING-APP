@@ -43,7 +43,7 @@ function analyzeCandles(candles) {
 
   const last = rows[rows.length - 1];
   const prev = rows[rows.length - 2];
-  const lookback = rows.slice(-6, -1); // exclude current candle from reference levels
+  const lookback = rows.slice(-6, -1);
   const prior = rows.slice(-11, -6);
 
   const open = Number(last[1]);
@@ -130,6 +130,7 @@ export default async function handler(req, res) {
 
     return json(res, 200, {
       ok: true,
+      engine_version: 'V4-PRICE-ACTION-5M',
       symbol,
       name: instrument.name,
       exchange: instrument.exchange,
