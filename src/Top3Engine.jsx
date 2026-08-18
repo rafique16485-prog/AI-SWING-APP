@@ -1,0 +1,51 @@
+import React,{useEffect,useMemo,useState} from 'react';
+import {TrendingUp,RefreshCw,Wifi,Database,Search,BarChart3,Zap} from 'lucide-react';
+
+const money=n=>Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:2});
+const indexSeed=[{symbol:'NIFTY50',name:'NIFTY 50',ltp:0,change_pct:0,exchange:'NSE'},{symbol:'SENSEX',name:'SENSEX',ltp:0,change_pct:0,exchange:'BSE'}];
+
+function direction(s){
+  if(!s)return 'WAIT';
+  const p=Number(s.price),r=Number(s.resistance),sup=Number(s.support),m=Number(s.momentum||s.change||0);
+  if(r>0&&p>r&&m>0)return 'LONG';
+  if(sup>0&&p<sup&&m<0)return 'SHORT';
+  return m>0?'LONG BIAS':m<0?'SHORT BIAS':'WAIT';
+}
+function confirmed(s){
+  if(!s)return false;
+  const status=String(s.status||s.setup||'').toUpperCase();
+  return Number(s.score)>=70&&Boolean(s.retest_hold)&&!Boolean(s.no_chase)&&!['AVOID','WATCH','WAIT'].includes(status);
+}
+function plan(s,dir){
+  const p=Number(s.price||0),sup=Number(s.support||0),res=Number(s.resistance||0);
+  if(!p||dir==='WAIT'||dir==='LONG BIAS'||dir==='SHORT BIAS')return null;
+  const sl=dir==='LONG'?(sup>0&&sup<p?sup:p*0.99):(res>p?res:p*1.01);
+  const risk=Math.abs(p-sl); if(!risk)return null;
+  return {entry:p,sl,target1:dir==='LONG'?p+risk*2:p-risk*2,target2:dir==='LONG'?p+risk*3:p-risk*3,rr:'1 : 2'};
+}
+
+export default function Top3Engine(){
+ const [stocks,setStocks]=useState([]),[indices,setIndices]=useState(indexSeed),[live,setLive]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[updated,setUpdated]=useState(''),[query,setQuery]=useState(''),[selected,setSelected]=useState(null),[pa,setPa]=useState(null),[paBusy,setPaBusy]=useState(false);
+ const snapshot=async()=>{try{setError('');const r=await fetch('/market_data.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Snapshot unavailable');const d=await r.json();const rows=(d.stocks||[]).map(x=>({symbol:x.s||x.n,name:x.n||x.s,price:+x.p||0,change:+x.m||0,volume:+x.v||0,momentum:+x.b||0,score:+x.score||0,status:x.status||x.setup||'WATCH',setup:x.setup||x.status||'WATCH',resistance:+x.res||0,support:+x.sup||0,target1:+x.target1||0,target2:+x.target2||0,retest_hold:Boolean(x.retest_hold),no_chase:Boolean(x.no_chase)}));setStocks(rows);setUpdated(d.updated_utc||'');if(!selected&&rows[0])setSelected(rows[0]);}catch(e){setError(e.message)}};
+ const indices=async()=>{try{const r=await fetch('/api/live-market?symbols=NIFTY50,SENSEX',{cache:'no-store'}),d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'Live API failed');setIndices(d.rows||[]);}catch(e){setError(e.message)}};
+ const priceAction=async symbol=>{try{setPaBusy(true);const r=await fetch('/api/price-action?symbol='+encodeURIComponent(symbol)+'&t='+Date.now(),{cache:'no-store'}),d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'Price action failed');setPa(d.analysis||null)}catch(e){setPa({error:e.message})}finally{setPaBusy(false)}};
+ useEffect(()=>{snapshot();const t=setInterval(snapshot,60000);return()=>clearInterval(t)},[]);
+ useEffect(()=>{if(!live)return;indices();const t=setInterval(indices,5000);return()=>clearInterval(t)},[live]);
+ const top3=useMemo(()=>stocks.filter(s=>s.symbol.toLowerCase().includes(query.toLowerCase())).sort((a,b)=>b.score-a.score).slice(0,3),[stocks,query]);
+ const selectedPlan=useMemo(()=>selected?plan(selected,direction(selected)):null,[selected]);
+ const connect=async()=>{if(live){setLive(false);return}setBusy(true);await indices();setBusy(false);setLive(true)};
+ const selectIndex=i=>{if(i.ltp)priceAction(i.symbol);};
+ const paScore=Number(pa?.score||0),paVerdict=paScore>=60?'LONG':paScore<=-60?'SHORT':'WAIT';
+ return <div className="min-h-screen bg-slate-950 text-slate-100 font-sans"><header className="sticky top-0 z-40 bg-slate-900/95 border-b border-slate-800"><div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center gap-3"><div><h1 className="text-2xl font-black">SWING HUNTER <span className="text-emerald-400">AI</span></h1><p className="text-xs text-slate-400">Top 3 Confirmation Engine • Live Upstox • 5-Min Price Action</p></div><button onClick={connect} disabled={busy} className="px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 font-bold flex gap-2 items-center">{busy?<RefreshCw className="animate-spin w-4"/>:live?<Wifi className="w-4"/>:<Database className="w-4"/>}{live?'LIVE UPSTOX':'CONNECT LIVE'}</button></div></header><main className="max-w-7xl mx-auto px-4 py-5 space-y-5">
+ <div className="grid grid-cols-2 gap-3">{indices.map(i=><button key={i.symbol} onClick={()=>selectIndex(i)} className="text-left p-4 rounded-2xl bg-slate-900 border border-slate-800"><div className="flex justify-between"><b>{i.name}</b><BarChart3 className="w-4"/></div><div className="text-2xl font-mono font-bold mt-2">{i.ltp?'₹'+money(i.ltp):'—'}</div><div className={Number(i.change_pct)>=0?'text-emerald-400':'text-rose-400'}>{i.ltp?(Number(i.change_pct)>=0?'+':'')+Number(i.change_pct).toFixed(2)+'%':'Connect Live'}</div><div className="text-[10px] text-slate-500">{i.exchange} • LIVE</div></button>)}</div>
+ {pa&&<div className="bg-slate-900 border border-emerald-500/30 rounded-2xl p-4"><div className="flex justify-between"><b>5-MIN PRICE ACTION • {pa.symbol||'INDEX'}</b><button onClick={()=>pa.symbol&&priceAction(pa.symbol)} className="p-2 bg-slate-800 rounded-lg"><RefreshCw className={'w-4 '+(paBusy?'animate-spin':'')}/></button></div>{pa.error?<p className="text-rose-300 text-sm mt-3">{pa.error}</p>:<div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4"><Metric a="Score" b={paScore}/><Metric a="Verdict" b={paVerdict}/><Metric a="Structure" b={pa.structure||'WAIT'}/><Metric a="BOS" b={pa.bos||'WAIT'}/><Metric a="Retest" b={pa.retest||'WAIT'}/></div>}</div>}
+ {error&&<div className="bg-rose-950/30 border border-rose-500/30 p-3 rounded-xl text-sm text-rose-300">⚠️ {error}</div>}
+ <div className="flex justify-between items-center"><div><h2 className="text-xl font-black flex gap-2 items-center"><Zap className="text-emerald-400"/>TOP 3 CONFIRMATION ENGINE</h2><p className="text-xs text-slate-500">Confirmation = score ≥70 + retest hold + no-chase cleared + non-WATCH status.</p></div><div className="text-[10px] text-slate-500">Snapshot: {updated?new Date(updated).toLocaleString('en-IN'):'loading'}</div></div>
+ <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl px-3"><Search className="w-4 text-slate-500"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search stock..." className="bg-transparent outline-none p-3 w-full text-sm"/></div>
+ <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{top3.map((s,i)=>{const d=direction(s),ok=confirmed(s),p=ok?plan(s,d):null;return <button key={s.symbol} onClick={()=>setSelected(s)} className={'text-left bg-slate-900 border rounded-2xl p-5 '+(ok?'border-emerald-500/50':'border-slate-800')}><div className="flex justify-between"><span className="text-2xl">#{i+1}</span><span className={'text-xs font-bold px-2 py-1 rounded '+(ok?'bg-emerald-500/20 text-emerald-400':'bg-amber-500/10 text-amber-400')}>{ok?'CONFIRMED':'WAIT'}</span></div><h3 className="text-lg font-black mt-3">{s.symbol}</h3><div className="text-2xl font-mono font-bold mt-2">₹{money(s.price)}</div><div className="grid grid-cols-2 gap-2 mt-4 text-xs"><Metric a="Score" b={s.score}/><Metric a="Move" b={(s.change>=0?'+':'')+s.change.toFixed(2)+'%'}/><Metric a="Volume" b={s.volume.toFixed(2)+'x'}/><Metric a="Direction" b={d}/></div>{ok&&p?<div className="mt-4 space-y-2 text-xs"><Level a="Entry" b={p.entry}/><Level a="SL" b={p.sl}/><Level a="T1" b={p.target1}/><Level a="T2" b={p.target2}/><Level a="R:R" b={p.rr}/></div>:<div className="mt-4 bg-slate-950 rounded-xl p-3 text-amber-300 text-xs">⚠️ Confirmation not complete. No trade.</div>}</button>})}</div>
+ <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden"><div className="p-4 border-b border-slate-800 flex justify-between"><b>LIVE CANDIDATES • {stocks.length}</b><span className="text-xs text-slate-500">Auto refresh 60s</span></div><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-slate-950 text-slate-500"><tr><th className="p-3 text-left">Stock</th><th className="p-3">LTP</th><th className="p-3">Move</th><th className="p-3">Vol</th><th className="p-3">Score</th><th className="p-3">Retest</th><th className="p-3">Decision</th></tr></thead><tbody className="divide-y divide-slate-800">{stocks.slice(0,20).map(s=><tr key={s.symbol} onClick={()=>setSelected(s)} className="hover:bg-slate-800 cursor-pointer"><td className="p-3 font-bold">{s.symbol}</td><td className="p-3 text-center">₹{money(s.price)}</td><td className={'p-3 text-center '+(s.change>=0?'text-emerald-400':'text-rose-400')}>{s.change>=0?'+':''}{s.change.toFixed(2)}%</td><td className="p-3 text-center">{s.volume.toFixed(2)}x</td><td className="p-3 text-center font-bold">{s.score}</td><td className="p-3 text-center">{s.retest_hold?'HOLD':'—'}</td><td className="p-3 text-center font-bold">{confirmed(s)?direction(s):'WAIT'}</td></tr>)}</tbody></table></div></div>
+ {selected&&<div className="bg-slate-900 border border-slate-800 rounded-2xl p-5"><h3 className="font-black text-lg">{selected.symbol} • Setup Decoder</h3><div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4"><Metric a="Score" b={selected.score}/><Metric a="Setup" b={selected.setup}/><Metric a="Support" b={'₹'+money(selected.support)}/><Metric a="Resistance" b={'₹'+money(selected.resistance)}/></div><p className="text-xs text-slate-500 mt-4">Stock Top-3 confirmation uses the scanner snapshot fields. Individual 5-minute live confirmation is only shown for NIFTY/SENSEX through the Price Action API.</p></div>}
+ <div className="text-center text-[11px] text-slate-500 p-3">⚠️ Planning/analysis only. No automatic order placement. Confirmation missing = WAIT.</div></main></div>
+}
+function Metric({a,b}){return <div className="bg-slate-950 rounded-xl p-3"><div className="text-[10px] text-slate-500 uppercase">{a}</div><b className="text-sm">{b}</b></div>}
+function Level({a,b}){return <div className="flex justify-between bg-slate-950 rounded-lg p-2"><span className="text-slate-500">{a}</span><b className="font-mono">{typeof b==='number'?'₹'+money(b):b}</b></div>}
