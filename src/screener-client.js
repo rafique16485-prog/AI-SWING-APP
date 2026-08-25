@@ -1,0 +1,1 @@
+export async function fetchLiveScreener(symbols){const q=(symbols||[]).join(',');const r=await fetch(`/api/screener?symbols=${encodeURIComponent(q)}`,{cache:'no-store'});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Live screener unavailable');return d;}
