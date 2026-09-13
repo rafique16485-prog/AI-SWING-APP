@@ -1,11 +1,5 @@
-function parseCookies(req) {
-  const out = {};
-  for (const part of (req.headers.cookie || "").split(";")) {
-    const i = part.indexOf("=");
-    if (i > -1) out[part.slice(0,i).trim()] = decodeURIComponent(part.slice(i+1).trim());
-  }
-  return out;
-}
+import crypto from "node:crypto";
+
 function page(title, message, ok=false) {
   const color = ok ? "#10b981" : "#ef4444";
   return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>SWINGPRO AI</title></head>
@@ -16,19 +10,40 @@ function page(title, message, ok=false) {
   <a href="/" style="display:inline-block;margin-top:12px;padding:12px 16px;border-radius:12px;background:#10b981;color:#04110b;text-decoration:none;font-weight:800">BACK TO APP</a>
   </div></body></html>`;
 }
+
+function verifyState(state, secret) {
+  if (!state || !secret) return false;
+  const dot = state.lastIndexOf(".");
+  if (dot <= 0) return false;
+  const data = state.slice(0, dot);
+  const provided = state.slice(dot + 1);
+  try {
+    const expected = crypto.createHmac("sha256", secret).update(data).digest("base64url");
+    const a = Buffer.from(provided);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return false;
+    const payload = JSON.parse(Buffer.from(data, "base64url").toString("utf8"));
+    const age = Math.floor(Date.now() / 1000) - Number(payload.iat);
+    return Number.isFinite(age) && age >= 0 && age <= 600;
+  } catch {
+    return false;
+  }
+}
+
 export default async function handler(req, res) {
   const { code, state, error, error_description } = req.query || {};
   if (error) return res.status(400).send(page("Upstox login cancelled", error_description || error));
-  const cookies = parseCookies(req);
-  if (!code || !state || !cookies.upstox_oauth_state || state !== cookies.upstox_oauth_state) {
-    return res.status(400).send(page("OAuth state error", "Security validation failed. Please start Connect Upstox again."));
-  }
 
   const clientId = process.env.UPSTOX_CLIENT_ID;
   const clientSecret = process.env.UPSTOX_CLIENT_SECRET;
   const redirectUri = process.env.UPSTOX_REDIRECT_URI || `https://${process.env.VERCEL_URL}/api/upstox/callback`;
+
   if (!clientId || !clientSecret || !redirectUri || redirectUri.includes("undefined")) {
     return res.status(500).send(page("Server configuration missing", "Add UPSTOX_CLIENT_ID, UPSTOX_CLIENT_SECRET and UPSTOX_REDIRECT_URI in Vercel Production environment variables."));
+  }
+
+  if (!code || !verifyState(state, clientSecret)) {
+    return res.status(400).send(page("OAuth state error", "Security validation failed. Please start Connect Upstox again."));
   }
 
   try {
@@ -55,16 +70,8 @@ export default async function handler(req, res) {
       "Max-Age=82800",
       secure ? "Secure" : ""
     ].filter(Boolean).join("; ");
-    const clearState = [
-      "upstox_oauth_state=",
-      "Path=/",
-      "HttpOnly",
-      "SameSite=Lax",
-      "Max-Age=0",
-      secure ? "Secure" : ""
-    ].filter(Boolean).join("; ");
 
-    res.setHeader("Set-Cookie", [tokenCookie, clearState]);
+    res.setHeader("Set-Cookie", tokenCookie);
     return res.status(200).send(page("Upstox connected ✓", "Your access token is stored in an HttpOnly session cookie. Go back to the app and tap Scan Market Now.", true));
   } catch (e) {
     return res.status(500).send(page("Connection error", e.message || "Unexpected server error."));
