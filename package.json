@@ -1,11 +1,11 @@
 {
   "name": "ai-swing-scanner",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/fix-watchlist.mjs && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
